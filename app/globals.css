@@ -1,0 +1,609 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Canvas: near-black warmed a few degrees toward blue (was neutral
+     #06070a). Reads as cold arena steel, not dead black. */
+  --color-ink: #070811;
+  --color-panel: #0d0f1a;
+  --color-panel-hi: #141826;
+  --color-chalk: #f4f6fb;
+
+  /* Electric blaze — reserved for SMALL accents: text, borders, glows,
+     the live dot, and the WIN state. Never a large flat fill.
+     (Red/ember system sitewide since the Heated rebrand, 2026-07-08 —
+     names kept as "blaze"/"steel" to avoid a repo-wide token rename.) */
+  --color-blaze: #d81f1f;
+  --color-blaze-bright: #f04a38;
+  --color-blaze-deep: #7a0f0f;
+
+  /* Steel — desaturated red that does the BULK fill work: large solid
+     fills (Pro card, share card) and surface tints. Keeps the electric
+     blaze scarce so it still reads as electric. */
+  --color-steel: #5c2618;
+  --color-steel-soft: #341409;
+
+  --color-line: rgba(244, 246, 251, 0.09);
+
+  /* Two dim text tiers, and only two. Eleven ad-hoc chalk opacities are in
+     use across the authed app with no defined scale, so each author picks
+     per line and the bottom of the ramp fails AA at the 10-11px letterspaced
+     mono it is used for. Measured composited over --color-panel (#0d0f1a),
+     which is where most of these labels actually sit:
+       chalk-2  ~9.2:1     chalk-3  ~5.6:1
+     RULE: nothing dimmer than chalk-3 may carry meaning, and no opacity-*
+     utility may be stacked on top of either. */
+  --color-chalk-2: rgba(244, 246, 251, 0.72);
+  --color-chalk-3: rgba(244, 246, 251, 0.55);
+
+  /* --color-line (0.09 alpha) is 1.35:1 and stays exactly as it is, for
+     DECORATIVE dividers. WCAG 1.4.11 wants 3:1 for anything that bounds a
+     CONTROL, which --color-line has never met: the secondary button reads as
+     floating text and a group of four unselected option cards reads as one
+     undifferentiated block. 0.38 measures 3.31:1 on ink and 3.39:1 on panel.
+     Use on: secondary buttons, inputs, unselected option cards, the account
+     disc. Never on card dividers. */
+  --color-line-strong: rgba(244, 246, 251, 0.38);
+
+  /* One soft radius, applied everywhere but the CTA blade (shape lock). */
+  --radius-card: 16px;
+
+  --font-display: var(--font-geist);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  color-scheme: dark;
+}
+
+:root {
+  /* Shared motion curve: heavy, physical ease-out */
+  --ease-premium: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Springy overshoot, reserved for phase transitions (arena state changes,
+     verdict reveal) — a little bounce reads as alive, not sluggish. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Tailwind v4 preflight sets buttons to cursor: default */
+button {
+  cursor: pointer;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-chalk);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-blaze);
+  color: var(--color-chalk);
+}
+
+/* Anchored sections scroll clear of the fixed header */
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+a,
+button,
+input {
+  touch-action: manipulation;
+}
+
+/* Visible keyboard focus everywhere, brand red */
+:focus-visible {
+  outline: 2px solid var(--color-blaze-bright);
+  outline-offset: 3px;
+}
+
+/* ── Type helpers ─────────────────────────────────────────────── */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Athletic display face: Archivo pushed to its expanded width extreme.
+   Giant uppercase poster headlines ONLY (landing page); everything else
+   stays Geist. Weight/tracking set per use via utilities. */
+.font-athletic {
+  font-family: var(--font-archivo), var(--font-geist), sans-serif;
+  font-stretch: 125%;
+}
+
+/* Hollow display text, red stroke */
+.text-stroke {
+  color: transparent;
+  -webkit-text-stroke: 2px var(--color-blaze);
+}
+
+/* Hollow display text, chalk stroke (ticker alternates, format numerals) */
+.text-stroke-chalk {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(244, 246, 251, 0.5);
+}
+
+@media (min-width: 768px) {
+  .text-stroke {
+    -webkit-text-stroke-width: 3px;
+  }
+}
+
+/* ── Grain overlay ────────────────────────────────────────────── */
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Load-in reveal, staggered ────────────────────────────────── */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.r1 { animation-delay: 0.05s; }
+.r2 { animation-delay: 0.18s; }
+.r3 { animation-delay: 0.34s; }
+.r4 { animation-delay: 0.5s; }
+.r5 { animation-delay: 0.66s; }
+
+/* ── Topic ticker marquee ─────────────────────────────────────── */
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker 32s linear infinite;
+}
+
+/* ── Card hover lift ──────────────────────────────────────────── */
+
+.lift {
+  transition: transform 0.3s var(--ease-premium),
+    border-color 0.3s var(--ease-premium);
+}
+
+.lift:hover {
+  transform: translateY(-4px);
+  border-color: rgba(240, 74, 56, 0.55);
+  box-shadow: 0 0 0 1px rgba(240, 74, 56, 0.2),
+    0 20px 55px -24px rgba(216, 31, 31, 0.55);
+}
+
+/* ── CTA press physics ────────────────────────────────────────── */
+
+.press {
+  transition: transform 0.3s var(--ease-premium),
+    background-color 0.3s var(--ease-premium);
+}
+
+.press:active {
+  transform: scale(0.98);
+}
+
+/* ── Scroll-entry reveal (driven by components/scroll-reveal.tsx) */
+
+.sreveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s var(--ease-premium),
+    transform 0.8s var(--ease-premium);
+}
+
+.sreveal.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Arena / HUD system (Nike x video-game hybrid) ────────────── */
+
+/* Machined card: nested double bezel. An outer shell (hairline border +
+   top-edge highlight) wrapping a faint inner core, so a panel reads as
+   milled hardware rather than a flat rectangle. One soft radius, locked. */
+.bezel {
+  position: relative;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* The inner core — a second, tighter bezel drawn just inside the shell. */
+.bezel::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: calc(var(--radius-card) - 5px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  pointer-events: none;
+}
+
+/* Primary surface: adds a soft red ambient glow around the shell. Layer
+   over .bezel (class order: `bezel bezel-primary`). */
+.bezel-primary {
+  border-color: rgba(216, 31, 31, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 1px rgba(216, 31, 31, 0.1),
+    0 24px 60px -30px rgba(216, 31, 31, 0.5);
+}
+
+/* Faint red radial mesh for hero atmospheres. The fixed grain overlay
+   layers on top of it (grain over gradient = expensive depth; grain over
+   flat black = noise). Drop as an aria-hidden child of a relative parent. */
+.mesh {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(75% 55% at 50% -8%, rgba(216, 31, 31, 0.16), transparent 62%),
+    radial-gradient(45% 45% at 82% 12%, rgba(240, 74, 56, 0.08), transparent 58%);
+}
+
+/* Perspective court-grid floor receding to a horizon (arena / 2K). */
+.court-floor {
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 58%;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 520px;
+}
+
+.court-floor::before {
+  content: "";
+  position: absolute;
+  inset: -60% -30% 0 -30%;
+  background-image: linear-gradient(rgba(240, 74, 56, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 74, 56, 0.22) 1px, transparent 1px);
+  background-size: 58px 58px;
+  transform: rotateX(74deg);
+  transform-origin: center bottom;
+  -webkit-mask-image: linear-gradient(to top, #000 6%, transparent 80%);
+  mask-image: linear-gradient(to top, #000 6%, transparent 80%);
+}
+
+/* Flat court-grid texture (no perspective) for feature-cell backgrounds. */
+.grid-texture {
+  background-image: linear-gradient(rgba(240, 74, 56, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 74, 56, 0.1) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 68%);
+  mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 68%);
+}
+
+/* Faint CRT scanlines for the game-screen read. */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.028) 0 1px,
+    transparent 1px 3px
+  );
+}
+
+/* Hairline repeating patterns alias at FRACTIONAL device pixel ratios: the
+   stripe period has to land on whole device pixels or the edges shimmer while
+   scrolling, which is what moire looks like on a phone. A 3px period is whole
+   at 2x and 3x but NOT at 2.625x, 2.75x or 3.5x, which covers a lot of Android.
+   A 4px period is whole at 2x, 2.75x, 3x and 3.5x. Same read, far fewer panels
+   it can beat against, and 1x is left exactly as authored. */
+@media (min-resolution: 2dppx) {
+  .scanlines::after {
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.028) 0 1px,
+      transparent 1px 4px
+    );
+  }
+}
+
+/* Emissive text (accent word in the hero). */
+.text-glow {
+  text-shadow: 0 0 14px rgba(216, 31, 31, 0.35), 0 0 32px rgba(216, 31, 31, 0.16);
+}
+
+/* Aggressive angular corner cut (HUD blade) for panels/buttons. */
+.clip-blade {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 15px),
+    calc(100% - 15px) 100%,
+    0 100%
+  );
+}
+
+/* Flat game button (Nike/2K: flat fill, hard edge, one crisp bevel line).
+   Glow is a hover-only accent, not a permanent gradient wash. */
+.game-btn {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-blaze);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: background-color 0.2s var(--ease-premium),
+    box-shadow 0.35s var(--ease-premium),
+    transform 0.35s var(--ease-premium);
+}
+
+/* Interactive states must not REDUCE contrast: white on --color-blaze is
+   5.08:1, and the previous rule swapped the fill to --color-blaze-bright at
+   3.66:1, so the label got harder to read at the exact moment of commitment,
+   on every CTA in the app and on the landing. It also grew the app's largest
+   flat blaze area, against the token rule at the top of this file. Hold the
+   fill; move the energy into the rim and the glow. */
+.game-btn:hover {
+  background: var(--color-blaze);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 0 0 1px rgba(240, 74, 56, 0.9),
+    0 10px 34px -10px rgba(240, 74, 56, 0.85);
+}
+
+.game-btn:active {
+  transform: scale(0.98);
+}
+
+.game-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: skewX(-20deg);
+  transition: left 0.7s var(--ease-premium);
+}
+
+.game-btn:hover::after {
+  left: 140%;
+}
+
+/* Pulsing HUD status dot. */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(240, 74, 56, 0.55);
+  }
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 5px rgba(240, 74, 56, 0);
+  }
+}
+
+.live-dot {
+  animation: pulse-dot 1.9s ease-in-out infinite;
+}
+
+/* ── Phase pop-in: spring-eased entrance for arena/verdict state changes ── */
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.pop-in {
+  animation: pop-in 0.55s var(--ease-spring) forwards;
+}
+
+/* ── THE TEXTURE RATION ────────────────────────────────────────────
+   Per screen, at most: ONE court band + horizon rule, TWO .grid-texture,
+   ONE .scanlines, ONE .text-glow, ONE .bezel-deck, ONE .clip-blade.
+   A texture may only sit behind the most important thing in its zone.
+   If it lands anywhere else, the rule is broken and the fix is deletion,
+   not tuning. Texture is the rank cue; wallpaper is not. */
+
+/* THE DECK. Exactly one per screen: the panel carrying the primary action.
+   Layer over .bezel (class order: "bezel bezel-deck"). It REPLACES .bezel's
+   border-color and box-shadow wholesale, so never stack it with
+   .bezel-primary; one of the two would be dead code.
+
+   Why it exists: .bezel's own drop shadow is 0 1px 2px rgba(0,0,0,0.5), a
+   pure-black 2px blur on a #070811 canvas. It has nowhere to darken to and
+   contributes nothing, which is the mechanical half of "flat". This adds a
+   real black ambient (the panel stands on a lit grid and has to cast onto
+   it) plus the red ambient idiom .bezel-primary already proves works.
+   The FILL stays flat var(--color-panel). No gradient. */
+.bezel-deck {
+  border-color: rgba(216, 31, 31, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(216, 31, 31, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.7),
+    0 48px 90px -44px rgba(0, 0, 0, 0.95),
+    0 28px 70px -34px rgba(216, 31, 31, 0.42);
+}
+
+/* THE FLOOR. The .court-floor grid as a STANDALONE band that fills its own
+   box top to bottom. .court-floor is written as the bottom 58% of a tall
+   hero section (that is how the landing uses it); dropped into a 200px band
+   it would fill only the bottom 116px and leave the horizon rule floating
+   above nothing. Same grid, same perspective, same mask, 100% height.
+   Parent needs position: relative. Put the horizon rule at the band's top
+   edge, so the deck sitting directly above it STANDS on the horizon rather
+   than covering it (a full-width opaque panel occludes anything painted
+   behind it, which is why a mid-band horizon does not render). */
+.court-band {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  perspective: 520px;
+}
+
+.court-band::before {
+  content: "";
+  position: absolute;
+  inset: -60% -30% 0 -30%;
+  background-image: linear-gradient(rgba(240, 74, 56, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(240, 74, 56, 0.22) 1px, transparent 1px);
+  background-size: 58px 58px;
+  transform: rotateX(74deg);
+  transform-origin: center bottom;
+  /* Fades to nothing at the very top rather than at 80%. .court-floor's mask
+     is tuned for a tall hero where the top of the box is far above the horizon;
+     in a short band it cut the grid off ~110px BELOW the horizon rule, so the
+     rule floated over a void and the deck looked like it was hovering. */
+  -webkit-mask-image: linear-gradient(to top, #000 4%, transparent 98%);
+  mask-image: linear-gradient(to top, #000 4%, transparent 98%);
+}
+
+/* .bezel is a PANEL treatment, never a ROW treatment: lists are one panel
+   with divide-y divide-line rows. That is a rule, not a class. This is the
+   backstop for a short surface that genuinely has to stand alone.
+   .bezel::before draws a second outline 4px inside the shell at 4% alpha,
+   which reads as machining on a 300px card and as blur on a 56px row. */
+.bezel-flat::before {
+  content: none;
+}
+
+/* CRITICAL a11y fix. clip-path clips the element's outline along with
+   everything else, and the global focus style near the top of this file is
+   outline: 2px solid with outline-offset: 3px, entirely outside the clip
+   region. Net effect since day one: the app's primary CTA has had NO
+   visible keyboard focus indicator, on every authed screen AND on the
+   landing page. An inset shadow survives clipping.
+
+   Known limit, accepted: the ring is severed along the 15px blade cut, so
+   there is a gap at the bottom-right corner. The remaining sides read
+   unambiguously. A full fix means moving the blade to a wrapper and keeping
+   the focusable element unclipped, which is not worth the markup.
+
+   Corollary: do NOT promote .clip-blade to panel scale. It would clip the
+   focus ring of every focusable element inside the panel. */
+.clip-blade:focus-visible {
+  outline: none;
+  /* .game-btn transitions box-shadow over 0.35s, and without this the ring
+     FADES IN over a third of a second. A focus indicator has to be there the
+     instant the key lands, so opt this state out of the transition. Caught
+     by reading the computed style on a real focus, not by inspection. */
+  transition: none;
+  box-shadow:
+    inset 0 0 0 2px var(--color-ink),
+    inset 0 0 0 4px var(--color-chalk);
+}
+
+/* The shimmer is a positioned descendant, so it paints ABOVE an inset
+   shadow. It only moves on hover, but hover plus focus would wash the ring
+   out mid-sweep. */
+.game-btn:focus-visible::after {
+  display: none;
+}
+
+/* Ticket pip fill. Was transition-[width], which animates a layout property
+   and was never covered by the reduced-motion block. Same look, but
+   compositor-only: render the fill at width:100% and drive it with
+   transform: scaleX(progress). */
+.pip-fill {
+  transform-origin: left;
+  transition: transform 0.9s var(--ease-premium);
+}
+
+/* ── Reduced motion: show content instantly, stop the marquee ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+    opacity: 1;
+  }
+
+  .ticker-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: auto;
+  }
+
+  /* The second copy only exists so the marquee loops without a seam. Standing
+     still, it was the same row of topics printed twice. */
+  .ticker-dupe {
+    display: none;
+  }
+
+  .lift,
+  .lift:hover,
+  .press,
+  .press:active {
+    transition: none;
+    transform: none;
+  }
+
+  .sreveal {
+    transition: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .live-dot {
+    animation: none;
+  }
+
+  .game-btn::after {
+    display: none;
+  }
+
+  .pop-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  svg circle {
+    transition: none !important;
+  }
+
+  .pip-fill {
+    transition: none;
+  }
+
+  /* Tailwind's own animation utilities were never covered here. A
+     reduced-motion user still got pulsing TEXT while the judge scores their
+     take (components/daily-arena.tsx), a spinning ring after checkout, and a
+     pulsing record dot. Pulsing text is a documented vestibular and
+     reading-difficulty trigger. */
+  .animate-pulse,
+  .animate-spin {
+    animation: none;
+  }
+}

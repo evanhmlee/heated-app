@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/award-daily",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-nba-teams",
+      "schedule": "15 0 * * *"
+    }
+  ]
+}
